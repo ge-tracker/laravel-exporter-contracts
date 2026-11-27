@@ -19,25 +19,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php:
-          - '8.0'
-          - '8.1'
         laravel:
-          - 8.*
-          - 9.*
+          - '10.*'
+          - '11.*'
+          - '12.*'
+          - '13.*'
         prefer:
           - 'prefer-lowest'
           - 'prefer-stable'
         include:
-          - laravel: '8.*'
-            testbench: '6.*'
-          - laravel: '9.*'
-            testbench: '7.*'
+          - laravel: '10.*'
+            testbench: '8.*'
+            php: '8.2'
+          - laravel: '11.*'
+            testbench: '9.*'
+            php: '8.2'
+          - laravel: '12.*'
+            testbench: '10.*'
+            php: '8.3'
+          - laravel: '13.*'
+            testbench: '11.*'
+            php: '8.3'
 
     name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} --${{ matrix.prefer }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -46,21 +53,29 @@ jobs:
         extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
         coverage: pcov
 
-    - uses: actions/cache@v3.0.5
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/cache@v4
       name: Cache dependencies
       with:
-        path: ~/.composer/cache/files
+        path: ${{ steps.composer-cache.outputs.dir }}
         key: composer-php-${{ matrix.php }}-${{ matrix.laravel }}-${{ matrix.prefer }}-${{ hashFiles('composer.json') }}
 
+    # Lowest majors resolve to advisory-affected releases; Composer >=2.9 blocks those by default
     - name: Install dependencies
+      env:
+        COMPOSER_NO_BLOCKING: 1
+        COMPOSER_NO_SECURITY_BLOCKING: 1
       run: |
         composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-        composer update --${{ matrix.prefer }} --prefer-dist --no-interaction --no-suggest
+        composer update --${{ matrix.prefer }} --prefer-dist --no-interaction
 
     - name: Run tests
       run: |
         vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
 
-    - uses: codecov/codecov-action@v3.1.0
+    - uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: false

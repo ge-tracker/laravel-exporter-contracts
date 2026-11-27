@@ -77,7 +77,7 @@ abstract class Metric
      */
     protected function name(): string
     {
-        return Str::of(get_class())->snake()->replace('\\', '');
+        return Str::of(static::class)->snake()->replace('\\', '');
     }
 
     /**

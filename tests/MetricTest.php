@@ -3,6 +3,7 @@
 namespace RenokiCo\LaravelExporter\Test;
 
 use RenokiCo\LaravelExporter\Exporter;
+use RenokiCo\LaravelExporter\Test\Fixtures\DefaultNameMetric;
 use RenokiCo\LaravelExporter\Test\Fixtures\GroupedTestMetric;
 use RenokiCo\LaravelExporter\Test\Fixtures\OutsideMetric;
 use RenokiCo\LaravelExporter\Test\Fixtures\TestMetric;
@@ -139,5 +140,17 @@ class MetricTest extends TestCase
         );
 
         $this->assertTrue($triggered);
+    }
+
+    public function test_default_name_derives_from_metric_class(): void
+    {
+        Exporter::metrics([DefaultNameMetric::class]);
+
+        Exporter::metric(DefaultNameMetric::class)->incBy(5);
+
+        $this->assertStringContainsString(
+            'laravel_renoki_co_laravel_exporter_test_fixtures_default_name_metric 5',
+            Exporter::exportAsPlainText()
+        );
     }
 }
